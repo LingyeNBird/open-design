@@ -79,6 +79,10 @@ export type {
 
 export type ExecMode = 'daemon' | 'api';
 export type ApiProtocol = 'anthropic' | 'openai' | 'azure' | 'google' | 'ollama';
+export type CodexSandboxMode =
+  | 'read-only'
+  | 'workspace-write'
+  | 'danger-full-access';
 
 export type LiveArtifactTabId = `live:${string}`;
 export type ProjectWorkspaceTabId = string | LiveArtifactTabId;
@@ -303,6 +307,9 @@ export interface AppConfig {
   agentModels?: Record<string, AgentModelChoice>;
   // Per-agent non-secret CLI config locations injected into detection and runs.
   agentCliEnv?: AgentCliEnvConfig;
+  // Codex-specific sandbox mode for CLI runs. Useful on native Windows where
+  // stricter sandbox modes may block otherwise legitimate local commands.
+  codexSandboxMode?: CodexSandboxMode;
   // Caps the upstream completion length in API mode. Defaults to 8192 when
   // unset; raise it for providers (e.g. MiMo) that allow longer responses.
   maxTokens?: number;

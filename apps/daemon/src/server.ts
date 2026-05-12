@@ -3572,6 +3572,16 @@ export async function startServer({
     try {
       const appConfig = await readAppConfig(RUNTIME_DATA_DIR);
       configuredAgentEnv = agentCliEnvForAgent(appConfig.agentCliEnv, def.id);
+      if (
+        def.id === 'codex' &&
+        typeof appConfig.codexSandboxMode === 'string' &&
+        appConfig.codexSandboxMode.length > 0
+      ) {
+        configuredAgentEnv = {
+          ...configuredAgentEnv,
+          OD_CODEX_SANDBOX_MODE: appConfig.codexSandboxMode,
+        };
+      }
     } catch {
       configuredAgentEnv = {};
     }

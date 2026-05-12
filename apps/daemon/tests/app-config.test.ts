@@ -305,6 +305,25 @@ describe('app-config', () => {
       });
     });
 
+    it('persists codexSandboxMode when valid and drops invalid values', async () => {
+      await writeAppConfig(dataDir, {
+        codexSandboxMode: 'danger-full-access',
+        onboardingCompleted: true,
+      });
+
+      let cfg = await readAppConfig(dataDir);
+      expect(cfg.codexSandboxMode).toBe('danger-full-access');
+      expect(cfg.onboardingCompleted).toBe(true);
+
+      await writeAppConfig(dataDir, {
+        codexSandboxMode: 'invalid-mode' as any,
+      });
+
+      cfg = await readAppConfig(dataDir);
+      expect(cfg.codexSandboxMode).toBeUndefined();
+      expect(cfg.onboardingCompleted).toBe(true);
+    });
+
     it('clears agentCliEnv when null or an empty object is sent', async () => {
       await writeAppConfig(dataDir, {
         agentCliEnv: {

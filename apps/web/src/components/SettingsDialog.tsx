@@ -43,6 +43,7 @@ import type {
   AppTheme,
   AppVersionInfo,
   ConnectionTestResponse,
+  CodexSandboxMode,
   OrbitRunSummary,
   OrbitStatusResponse,
   ExecMode,
@@ -328,6 +329,15 @@ const AGENT_CLI_ENV_FIELDS = [
   },
 ] as const;
 
+const CODEX_SANDBOX_OPTIONS: Array<{
+  value: CodexSandboxMode;
+  label: string;
+}> = [
+  { value: 'workspace-write', label: 'workspace-write (default)' },
+  { value: 'danger-full-access', label: 'danger-full-access (least restricted)' },
+  { value: 'read-only', label: 'read-only' },
+];
+
 function defaultApiProtocolConfig(protocol: ApiProtocol): ApiProtocolConfig {
   const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
   return {
@@ -585,6 +595,7 @@ export function sanitizeSettingsSavePayload(
     model: initial.model,
     agentId: initial.agentId,
     agentCliEnv: initial.agentCliEnv,
+    codexSandboxMode: initial.codexSandboxMode,
     maxTokens: initial.maxTokens,
   };
 }
@@ -2053,6 +2064,29 @@ export function SettingsDialog({
                 <div className="agent-cli-env-head">
                   <h4>{t('settings.cliEnvTitle')}</h4>
                   <p className="hint">{t('settings.cliEnvHint')}</p>
+                </div>
+                <div className="agent-cli-env-grid" style={{ marginBottom: 14 }}>
+                  <label className="field">
+                    <span className="field-label">Codex sandbox mode</span>
+                    <select
+                      value={cfg.codexSandboxMode ?? 'workspace-write'}
+                      onChange={(e) =>
+                        setCfg((c) => ({
+                          ...c,
+                          codexSandboxMode: e.target.value as CodexSandboxMode,
+                        }))
+                      }
+                    >
+                      {CODEX_SANDBOX_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="hint">
+                      Native Windows users may need `danger-full-access` when Codex blocks local command execution under stricter sandbox policies.
+                    </p>
+                  </label>
                 </div>
                 <div className="agent-cli-env-grid">
                   {AGENT_CLI_ENV_FIELDS.map((field) => (

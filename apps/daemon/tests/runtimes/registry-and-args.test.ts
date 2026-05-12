@@ -11,6 +11,7 @@ test('AGENT_DEFS ids are unique', () => {
 
 test('codex args disable plugins when OD_CODEX_DISABLE_PLUGINS is 1', () => {
   process.env.OD_CODEX_DISABLE_PLUGINS = '1';
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const args = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
 
@@ -29,6 +30,7 @@ test('codex args disable plugins when OD_CODEX_DISABLE_PLUGINS is 1', () => {
 
 test('codex args use workspace-write sandbox instead of deprecated full-auto', () => {
   delete process.env.OD_CODEX_DISABLE_PLUGINS;
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const args = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
 
@@ -44,6 +46,7 @@ test('codex args use workspace-write sandbox instead of deprecated full-auto', (
 
 test('codex args keep plugins enabled when OD_CODEX_DISABLE_PLUGINS is unset', () => {
   delete process.env.OD_CODEX_DISABLE_PLUGINS;
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const args = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
 
@@ -53,6 +56,7 @@ test('codex args keep plugins enabled when OD_CODEX_DISABLE_PLUGINS is unset', (
 
 test('codex args keep plugins enabled when OD_CODEX_DISABLE_PLUGINS is not 1', () => {
   process.env.OD_CODEX_DISABLE_PLUGINS = 'true';
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const args = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
 
@@ -134,6 +138,7 @@ test('codex picker includes gpt-5.1 model family', () => {
 // stdin pipe alone (gated by `promptViaStdin: true`). Regression of #237.
 test('codex args do not include the literal `-` stdin sentinel (regression of #237)', () => {
   delete process.env.OD_CODEX_DISABLE_PLUGINS;
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const baseArgs = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
   assert.equal(baseArgs.includes('-'), false);
@@ -169,6 +174,7 @@ test('codex args do not include the literal `-` stdin sentinel (regression of #2
 
 test('codex args pass valid extraAllowedDirs with repeatable --add-dir flags', () => {
   delete process.env.OD_CODEX_DISABLE_PLUGINS;
+  delete process.env.OD_CODEX_SANDBOX_MODE;
 
   const args = codex.buildArgs(
     '',
@@ -182,4 +188,19 @@ test('codex args pass valid extraAllowedDirs with repeatable --add-dir flags', (
     args.filter((arg, index) => arg === '--add-dir' || args[index - 1] === '--add-dir'),
     ['--add-dir', '/repo/skills', '--add-dir', '/tmp/codex/generated_images'],
   );
+});
+
+test('codex args allow overriding the sandbox mode for local debugging', () => {
+  process.env.OD_CODEX_SANDBOX_MODE = 'danger-full-access';
+
+  const args = codex.buildArgs('', [], [], {}, { cwd: '/tmp/od-project' });
+
+  assert.deepEqual(args.slice(0, 5), [
+    'exec',
+    '--json',
+    '--skip-git-repo-check',
+    '--sandbox',
+    'danger-full-access',
+  ]);
+  assert.equal(args.includes('sandbox_workspace_write.network_access=true'), false);
 });

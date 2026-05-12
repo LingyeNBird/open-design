@@ -22,6 +22,10 @@ export interface AgentModelPrefs {
 }
 
 export type AgentCliEnvPrefs = Record<string, Record<string, string>>;
+export type CodexSandboxModePrefs =
+  | 'read-only'
+  | 'workspace-write'
+  | 'danger-full-access';
 
 export interface TelemetryPrefs {
   metrics?: boolean;
@@ -40,6 +44,7 @@ export interface AppConfigPrefs {
   agentId?: string | null;
   agentModels?: Record<string, AgentModelPrefs>;
   agentCliEnv?: AgentCliEnvPrefs;
+  codexSandboxMode?: CodexSandboxModePrefs;
   skillId?: string | null;
   designSystemId?: string | null;
   disabledSkills?: string[];
@@ -55,6 +60,7 @@ const ALLOWED_KEYS: ReadonlySet<keyof AppConfigPrefs> = new Set([
   'agentId',
   'agentModels',
   'agentCliEnv',
+  'codexSandboxMode',
   'skillId',
   'designSystemId',
   'disabledSkills',
@@ -76,6 +82,20 @@ const TELEMETRY_KEYS: ReadonlySet<string> = new Set([
   'content',
   'artifactManifest',
 ]);
+
+function validateCodexSandboxMode(
+  raw: unknown,
+): CodexSandboxModePrefs | undefined {
+  if (typeof raw !== 'string') return undefined;
+  switch (raw.trim()) {
+    case 'read-only':
+    case 'workspace-write':
+    case 'danger-full-access':
+      return raw.trim() as CodexSandboxModePrefs;
+    default:
+      return undefined;
+  }
+}
 
 function validateTelemetry(raw: unknown): TelemetryPrefs | undefined {
   if (raw === undefined || raw === null) return undefined;
@@ -216,6 +236,14 @@ function applyConfigValue(
   }
   if (key === 'agentCliEnv') {
     const validated = validateAgentCliEnv(value);
+    if (validated !== undefined) {
+      target[key] = validated;
+    } else {
+      delete target[key];
+    }
+  }
+  if (key === 'codexSandboxMode') {
+    const validated = validateCodexSandboxMode(value);
     if (validated !== undefined) {
       target[key] = validated;
     } else {

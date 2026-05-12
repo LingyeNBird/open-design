@@ -1,6 +1,20 @@
 import { DEFAULT_MODEL_OPTION, clampCodexReasoning } from './shared.js';
 import type { RuntimeAgentDef } from '../types.js';
 
+type CodexSandboxMode = 'read-only' | 'workspace-write' | 'danger-full-access';
+
+function resolveCodexSandboxMode(): CodexSandboxMode {
+  const raw = process.env.OD_CODEX_SANDBOX_MODE?.trim().toLowerCase();
+  switch (raw) {
+    case 'read-only':
+    case 'workspace-write':
+    case 'danger-full-access':
+      return raw;
+    default:
+      return 'workspace-write';
+  }
+}
+
 export const codexAgentDef = {
     id: 'codex',
     name: 'Codex CLI',
@@ -44,15 +58,20 @@ export const codexAgentDef = {
       options = {},
       runtimeContext = {},
     ) => {
+      const sandboxMode = resolveCodexSandboxMode();
       const args = [
         'exec',
         '--json',
         '--skip-git-repo-check',
         '--sandbox',
-        'workspace-write',
-        '-c',
-        'sandbox_workspace_write.network_access=true',
+        sandboxMode,
       ];
+      if (sandboxMode === 'workspace-write') {
+        args.push(
+          '-c',
+          'sandbox_workspace_write.network_access=true',
+        );
+      }
       if (process.env.OD_CODEX_DISABLE_PLUGINS === '1') {
         args.push('--disable', 'plugins');
       }

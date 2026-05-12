@@ -1,0 +1,75 @@
+name: fork-win-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      output:
+        description: "Windows build output type."
+        required: true
+        type: choice
+        default: nsis
+        options:
+          - nsis
+          - dir
+          - all
+
+permissions:
+  contents: read
+
+jobs:
+  build_win:
+    name: Build Windows artifact
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.33.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup NSIS
+        shell: pwsh
+        run: |
+          if ((Get-Command makensis.exe -ErrorAction SilentlyContinue) -or (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe")) {
+            exit 0
+          }
+          choco install nsis -y --no-progress
+
+      - name: Build Windows package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $toolsPackDir = Join-Path $env:RUNNER_TEMP "tools-pack"
+          $buildJsonPath = Join-Path $env:RUNNER_TEMP "fork-win-build.json"
+          $buildOutput = pnpm exec tools-pack win build `
+            --dir $toolsPackDir `
+            --namespace fork-win `
+            --portable `
+            --to "${{ inputs.output }}" `
+            --json
+          if ($LASTEXITCODE -ne 0) {
+            throw "tools-pack win build exited with code $LASTEXITCODE"
+          }
+          $buildOutput | Set-Content -Path $buildJsonPath
+          $buildOutput
+
+      - name: Upload Windows artifact bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-design-win-${{ github.ref_name }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/fork-win-build.json
+            ${{ runner.temp }}/tools-pack/out/win/namespaces/fork-win
+          if-no-files-found: error
